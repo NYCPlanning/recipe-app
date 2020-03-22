@@ -6,8 +6,14 @@ from cook import Archiver
 import json
 
 conn = create_engine(os.environ.get('RECIPE_ENGINE'))
-archiver = Archiver(engine=os.environ['RECIPE_ENGINE'], 
-                    ftp_prefix=os.environ['FTP_PREFIX'])
+archiver = Archiver(
+        engine=os.environ['RECIPE_ENGINE'], 
+        ftp_prefix=os.environ['FTP_PREFIX'],
+        s3_endpoint = os.environ.get('AWS_S3_ENDPOINT', ''),
+        s3_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY', ''),
+        s3_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID', '')
+    )
+
 st.header('recipe')
 
 @st.cache
@@ -36,10 +42,10 @@ dstSRS = st.text_input('dstSRS', metadata['dstSRS'])
 srcSRS = st.text_input('srcSRS', metadata['srcSRS'])
 metaInfo = st.text_input('metaInfo', metadata.get('metaInfo', ''))
 geometryType = st.text_input('geometryType', metadata['geometryType'])
-path = st.text_input('path', metadata['path'])
 newFieldNames = st.text_input('newFieldNames', metadata['newFieldNames'])
 srcOpenOptions = st.text_input('srcOpenOptions', metadata['srcOpenOptions'])
 layerCreationOptions = st.text_input('layerCreationOptions', metadata['layerCreationOptions'])
+path = st.text_input('path', metadata['path'])
 
 recipe_config={
     "path":path,
