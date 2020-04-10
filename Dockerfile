@@ -20,3 +20,5 @@ RUN apt update\
 RUN pip3 install -r requirements.txt
 
 CMD ["./entrypoint.sh"]
+
+EXPOSE 5000
