@@ -1,0 +1,8 @@
+python-libmagic
+streamlit
+sqlalchemy
+psycopg2-binary
+filemagic
+boto3
+requests
+git+https://github.com/NYCPlanning/cook.git@master
