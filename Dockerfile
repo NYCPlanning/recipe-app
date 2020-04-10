@@ -1,4 +1,4 @@
-FROM osgeo/gdal:ubuntu-small-latest
+FROM nycplanning/cook:latest
 
 WORKDIR /usr/src/app
 
@@ -13,6 +13,8 @@ RUN apt update\
         libmagic-dev \
         git\
         python3-pip\ 
+        build-essential\
+        libffi-dev\
     && apt autoclean
 
 RUN pip3 install -r requirements.txt
