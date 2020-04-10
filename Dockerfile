@@ -11,8 +11,9 @@ COPY . .
 RUN apt update\
     && apt install -y \
         libmagic-dev \
-        git
+        git\
+        python3-pip
 
-RUN pip3 install -r requirements.txt
+RUN pip install -r requirements.txt
 
 CMD ["./entrypoint.sh"]
