@@ -13,5 +13,5 @@ jobs:
       - id: deploy
         name: Deploy to dokku
         run: |
-          git remote add dokku ssh://dokku@nycplanningdigital.com:recipe
+          git remote add dokku dokku@recipe.nycplanningdigital.com:recipe
           git push dokku master
