@@ -10,8 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - id: deploy
-        name: Deploy to dokku
-        run: |
-          git remote add dokku dokku@recipe.nycplanningdigital.com:recipe
-          git push dokku master
+      - name: Log into Docker registry
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USER }} --password-stdin
+      - name: build image
+        run: | 
+          docker build --tag sptkl/recipe:latest .
+          docker push sptkl/recipe:latest
