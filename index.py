@@ -36,7 +36,6 @@ def get_metadata(schema):
         else: 
             return result
 
-@st.cache
 def get_tables(schema): 
     tables = conn.execute(f"select * from information_schema.tables where table_schema = '{schema}'").fetchall()
     return [dict(row)['table_name'] for row in tables]
@@ -128,15 +127,16 @@ if not new:
     latest = get_latest(schema)
     undeletable=[latest, 'latest']
     deletable=[i for i in tables if i not in undeletable]
-    del_table=st.sidebar.selectbox('pick a version to delete', deletable, key='del-select-table')
+    del_table=st.sidebar.multiselect('pick a version to delete', deletable, key='del-select-table')
     delete = st.sidebar.button('delete')
     st.sidebar.warning(f'note that {", ".join([f"`{i}`" for i in undeletable])} \
         are not deletable, if you want to over write, just upload a new version')
     if delete:
-        conn.execute(f'''
-            DROP TABLE {schema}."{del_table}";
-        ''')
-        st.sidebar.success(f'{schema}.{del_table} is deleted')
+        for i in del_table:
+            conn.execute(f'''
+                DROP TABLE {schema}."{i}";
+            ''')
+            st.sidebar.success(f'`{schema}.{i}` is deleted')
 else:
     pass
 st.sidebar.markdown('''
