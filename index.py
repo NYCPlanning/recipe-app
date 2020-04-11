@@ -23,8 +23,6 @@ client = session.client('s3',
             aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID', ''),
             aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY', ''))
 
-st.header('recipe')
-
 @st.cache
 def get_schema():
     schemas = conn.execute('select distinct schema_name from meta.metadata').fetchall()
@@ -32,12 +30,21 @@ def get_schema():
 
 @st.cache
 def get_metadata(schema):
-    return conn.execute(f"select * from meta.metadata where schema_name = '{schema}'").fetchone()
+        result = conn.execute(f"select * from meta.metadata where schema_name = '{schema}'").fetchone()
+        if result is None: 
+            return None, {}, None
+        else: 
+            return result
 
 @st.cache
 def get_tables(schema): 
     tables = conn.execute(f"select * from information_schema.tables where table_schema = '{schema}'").fetchall()
     return [dict(row)['table_name'] for row in tables]
+
+@st.cache
+def get_latest(schema):
+    tables = conn.execute(f"select v from {schema}.latest limit 1").fetchall()
+    return [dict(row)['v'] for row in tables][0]
 
 def guess_type(newfile):
     with magic.Magic() as m:
@@ -66,17 +73,24 @@ def write_to_s3(newfile, schema, acl='client', client=client):
         st.warning('awaiting your file ...')
         return ''
 
+### MAIN
+st.markdown('''
+        <h1><img style='height:10%; width:10%; float:left; vertical-align: baseline; padding: 5px;'
+        src="https://raw.githubusercontent.com/NYCPlanning/logo/master/dcp_logo_772.png">
+        DATA RECIPE</h1>
+        ''', unsafe_allow_html=True)
+
 schemas = get_schema()
 new = st.checkbox('new table?')
 if new:
     schema = st.text_input('pick a table name')
-    metadata = {}
 else: 
     schema = st.selectbox('pick a table name', schemas, index=schemas.index('dpr_parksproperties'))
-    tables = get_tables(schema)
-    _, metadata, last_update = get_metadata(schema)
-    st.text(last_update)
-    st.write(tables)
+
+tables = get_tables(schema)
+_, metadata, last_update = get_metadata(schema)
+st.text(last_update)
+st.write(tables)
 
 version_name = st.text_input('version_name', metadata.get('version_name', ''))
 dstSRS = st.text_input('dstSRS', metadata.get('dstSRS', 'EPSG:4326'))
@@ -107,6 +121,30 @@ recipe_config={
     "layerCreationOptions":literal_eval(layerCreationOptions)
     }
 submit = st.button('submit')
+
+### SIDEBAR
+st.sidebar.header('Delete Dataset')
+if not new:
+    latest = get_latest(schema)
+    undeletable=[latest, 'latest']
+    deletable=[i for i in tables if i not in undeletable]
+    del_table=st.sidebar.selectbox('pick a version to delete', deletable, key='del-select-table')
+    delete = st.sidebar.button('delete')
+    st.sidebar.warning(f'note that {", ".join([f"`{i}`" for i in undeletable])} \
+        are not deletable, if you want to over write, just upload a new version')
+    if delete:
+        conn.execute(f'''
+            DROP TABLE {schema}."{del_table}";
+        ''')
+        st.sidebar.success(f'{schema}.{del_table} is deleted')
+else:
+    pass
+st.sidebar.markdown('''
+    This application is still in active development. 
+    It is created by and maintained by __EDM Data Engineering__
+    [issues](https://github.com/NYCPlanning/recipe-app/issues) are welcomed!
+''', unsafe_allow_html=True)
+###
 
 if submit and not new:
     archiver.archive_table(recipe_config)
