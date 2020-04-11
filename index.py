@@ -27,8 +27,8 @@ st.header('recipe')
 
 @st.cache
 def get_schema():
-    schemas = conn.execute('select distinct table_schema from information_schema.tables where table_schema !~*\'meta\'').fetchall()
-    return [dict(row)['table_schema'] for row in schemas]
+    schemas = conn.execute('select distinct schema_name from meta.metadata').fetchall()
+    return [dict(row)['schema_name'] for row in schemas]
 
 @st.cache
 def get_metadata(schema):
@@ -67,20 +67,25 @@ def write_to_s3(newfile, schema, acl='client', client=client):
         return ''
 
 schemas = get_schema()
-schema = st.selectbox('pick a table name', schemas, index=schemas.index('test'))
-tables = get_tables(schema)
-_, metadata, last_update = get_metadata(schema)
-st.text(last_update)
-st.write(tables)
+new = st.checkbox('new table?')
+if new:
+    schema = st.text_input('pick a table name')
+    metadata = {}
+else: 
+    schema = st.selectbox('pick a table name', schemas, index=schemas.index('dpr_parksproperties'))
+    tables = get_tables(schema)
+    _, metadata, last_update = get_metadata(schema)
+    st.text(last_update)
+    st.write(tables)
 
 version_name = st.text_input('version_name', metadata.get('version_name', ''))
-dstSRS = st.text_input('dstSRS', metadata.get('dstSRS', ''))
-srcSRS = st.text_input('srcSRS', metadata.get('dstSRS', ''))
+dstSRS = st.text_input('dstSRS', metadata.get('dstSRS', 'EPSG:4326'))
+srcSRS = st.text_input('srcSRS', metadata.get('dstSRS', 'EPSG:4326'))
 metaInfo = st.text_input('metaInfo', metadata.get('metaInfo', ''))
-geometryType = st.text_input('geometryType', metadata.get('geometryType', ''))
+geometryType = st.text_input('geometryType', metadata.get('geometryType', 'NONE'))
 newFieldNames = st.text_input('newFieldNames', metadata.get('newFieldNames', '[]'))
-srcOpenOptions = st.text_input('srcOpenOptions', metadata.get('srcOpenOptions', '[]'))
-layerCreationOptions = st.text_input('layerCreationOptions', metadata.get('layerCreationOptions', '[]'))
+srcOpenOptions = st.text_input('srcOpenOptions', metadata.get('srcOpenOptions', "['AUTODETECT_TYPE=NO', 'EMPTY_STRING_AS_NULL=YES', 'GEOM_POSSIBLE_NAMES=the_geom']"))
+layerCreationOptions = st.text_input('layerCreationOptions', metadata.get('layerCreationOptions', "['OVERWRITE=YES', 'PRECISION=NO']"))
 upload=st.checkbox('upload new file?')
 if upload:
     acl = st.radio('ACL', ('public-read', 'private'))
@@ -103,13 +108,24 @@ recipe_config={
     }
 submit = st.button('submit')
 
-if submit:
+if submit and not new:
     archiver.archive_table(recipe_config)
     conn.execute(f'''
             UPDATE meta.metadata
             SET config='{json.dumps(recipe_config)}'::jsonb,
                 last_update=now()
             WHERE schema_name='{schema}';
+        ''')
+    st.success(f'{schema} is successfully loaded')
+    st.write(recipe_config)
+elif submit and new: 
+    archiver.archive_table(recipe_config)
+    conn.execute(f'''
+            INSERT INTO meta.metadata(schema_name, config,last_update)
+            VALUES 
+                ('{schema}',
+                '{json.dumps(recipe_config)}'::jsonb,
+                now());
         ''')
     st.success(f'{schema} is successfully loaded')
     st.write(recipe_config)
