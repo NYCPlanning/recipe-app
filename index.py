@@ -36,7 +36,7 @@ def get_metadata(schema):
         else: 
             return result
 
-def get_tables(schema): 
+def get_tables(schema):
     tables = conn.execute(f"select * from information_schema.tables where table_schema = '{schema}'").fetchall()
     return [dict(row)['table_name'] for row in tables]
 
@@ -94,11 +94,11 @@ st.write(tables)
 version_name = st.text_input('version_name', metadata.get('version_name', ''))
 dstSRS = st.text_input('dstSRS', metadata.get('dstSRS', 'EPSG:4326'))
 srcSRS = st.text_input('srcSRS', metadata.get('dstSRS', 'EPSG:4326'))
-metaInfo = st.text_input('metaInfo', metadata.get('metaInfo', ''))
 geometryType = st.text_input('geometryType', metadata.get('geometryType', 'NONE'))
+layerCreationOptions = st.text_input('layerCreationOptions', metadata.get('layerCreationOptions', "['OVERWRITE=YES', 'PRECISION=NO']"))
 newFieldNames = st.text_input('newFieldNames', metadata.get('newFieldNames', '[]'))
 srcOpenOptions = st.text_input('srcOpenOptions', metadata.get('srcOpenOptions', "['AUTODETECT_TYPE=NO', 'EMPTY_STRING_AS_NULL=YES', 'GEOM_POSSIBLE_NAMES=the_geom']"))
-layerCreationOptions = st.text_input('layerCreationOptions', metadata.get('layerCreationOptions', "['OVERWRITE=YES', 'PRECISION=NO']"))
+metaInfo = st.text_input('metaInfo', metadata.get('metaInfo', ''))
 upload=st.checkbox('upload new file?')
 if upload:
     acl = st.radio('ACL', ('public-read', 'private'))
@@ -122,7 +122,26 @@ recipe_config={
 submit = st.button('submit')
 
 ### SIDEBAR
-st.sidebar.header('Delete Dataset')
+st.sidebar.markdown('''
+    # Instructions:
+    ### Updating an Exisiting Table: 
+    1. select the __schema name__ (table name) you are looking for, note the dropdown supports text search. 
+    2. enter a __version name__. For pluto, DCP published shapfiles, use vintage, e.g. `20A`, `20B`, `20v2` and etc
+    3. Specify __spatial reference__, e.g. `EPSG:4326`, `EPSG:2263`
+    4. Specify __geometry type__, one of `NONE`, `GEOMETRY`, `POINT`, `LINESTRING`, `POLYGON`, `GEOMETRYCOLLECTION`, 
+    `MULTIPOINT`, `MULTIPOLYGON`, `MULTILINESTRING`, `CIRCULARSTRING`, `COMPOUNDCURVE`, `CURVEPOLYGON`, `MULTICURVE`, and `MULTISURFACE`
+    5. Specify __layer creation options__, e.g. `['OVERWRITE=YES', 'PRECISION=NO']`
+    6. __SRC open options__, e.g. `['AUTODETECT_TYPE=NO', 'EMPTY_STRING_AS_NULL=YES', 'GEOM_POSSIBLE_NAMES=the_geom', 'X_POSSIBLE_NAMES=longitude,Longitude,Lon,lon,x', 'Y_POSSIBLE_NAMES=latitude,Latitude,Lat,lat,y']`
+    7. Only fill in __new field names__ if we have a new list of columns names, make sure the order matches
+    8. __Metainfo__ is for a brief description about the dataset, e.g. "data comes from opendata"
+    9. Choose if you are loading data from a known url or upload new file. 
+    
+    ###  Create New Table: 
+    1. choose a schema name that hasn't been used before.
+    2. fill in the corresponding values according the above mentioned.
+    ''')
+
+st.sidebar.header('Delete Table')
 if not new:
     latest = get_latest(schema)
     undeletable=[latest, 'latest']
