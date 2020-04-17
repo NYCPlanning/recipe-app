@@ -55,10 +55,10 @@ def guess_type(newfile):
     else:
         return filetype,'geojson'
 
-def write_to_s3(newfile, schema, acl='client', client=client):
+def write_to_s3(newfile, schema, acl, ext, client=client):
     if newfile is not None:
-        filetype,extension=guess_type(newfile)
-        key=f'{datetime.today().strftime("%Y-%m-%d")}/{schema}.{extension}'
+        filetype,_=guess_type(newfile)
+        key=f'{datetime.today().strftime("%Y-%m-%d")}/{schema}.{ext}'
         bucket='edm-recipes'
         client.put_object(
                 ACL=acl, 
@@ -103,8 +103,9 @@ metaInfo = st.text_input('metaInfo', metadata.get('metaInfo', ''))
 upload=st.checkbox('upload new file?')
 if upload:
     acl = st.radio('ACL', ('public-read', 'private'))
+    ext = st.radio('File Type', ('zip', 'geojson', 'csv'))
     newfile = st.file_uploader('upload new', type=['csv', 'zip', 'geojson'])
-    path = write_to_s3(newfile, schema, acl, client=client)
+    path = write_to_s3(newfile, schema, acl, ext, client=client)
 else: 
     path = st.text_input('path', metadata.get('path', ''))
 
