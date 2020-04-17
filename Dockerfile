@@ -9,7 +9,7 @@ COPY . .
 
 RUN apt update\
     && apt install -y \
-        libmagic-dev \
+        libmagic-dev\
         git\
         python3-pip\ 
         build-essential\

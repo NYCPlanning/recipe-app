@@ -48,6 +48,7 @@ def get_latest(schema):
 def guess_type(newfile):
     with magic.Magic() as m:
         filetype=m.id_buffer(newfile.getvalue())
+    print(filetype)
     if 'CSV text' in filetype:
         return 'csv'
     elif 'Zip archive' in filetype:
