@@ -4,7 +4,6 @@ from ast import literal_eval
 from cook import Archiver
 import streamlit as st
 import json
-import magic
 import boto3
 import os
 
@@ -45,19 +44,9 @@ def get_latest(schema):
     tables = conn.execute(f"select v from {schema}.latest limit 1").fetchall()
     return [dict(row)['v'] for row in tables][0]
 
-def guess_type(newfile):
-    with magic.Magic() as m:
-        filetype=m.id_buffer(newfile.getvalue())
-    if 'CSV text' in filetype:
-        return filetype,'csv'
-    elif 'Zip archive' in filetype:
-        return filetype,'zip'
-    else:
-        return filetype,'geojson'
 
 def write_to_s3(newfile, schema, acl, ext, client=client):
     if newfile is not None:
-        filetype,_=guess_type(newfile)
         key=f'{datetime.today().strftime("%Y-%m-%d")}/{schema}.{ext}'
         bucket='edm-recipes'
         client.put_object(
@@ -66,7 +55,6 @@ def write_to_s3(newfile, schema, acl, ext, client=client):
                 Bucket=bucket,
                 Key=key)
         path=f's3://{bucket}/{key}'
-        st.write(filetype)
         st.success(f'successfully uploaded to {path}')
         return path
     else: 
@@ -101,13 +89,14 @@ newFieldNames = st.text_input('newFieldNames', metadata.get('newFieldNames', '[]
 srcOpenOptions = st.text_input('srcOpenOptions', metadata.get('srcOpenOptions', "['AUTODETECT_TYPE=NO', 'EMPTY_STRING_AS_NULL=YES', 'GEOM_POSSIBLE_NAMES=the_geom']"))
 metaInfo = st.text_input('metaInfo', metadata.get('metaInfo', ''))
 upload=st.checkbox('upload new file?')
+_path=metadata.get('path', '')
 if upload:
-    acl = st.radio('ACL', ('public-read', 'private'))
-    ext = st.radio('File Type', ('zip', 'geojson', 'csv'))
-    newfile = st.file_uploader('upload new', type=['csv', 'zip', 'geojson'])
+    acl = st.radio('ACL', ('public-read', 'private'), index=1)
+    ext = _path.split(".")[-1]
+    newfile = st.file_uploader('upload new', type=[ext])
     path = write_to_s3(newfile, schema, acl, ext, client=client)
 else: 
-    path = st.text_input('path', metadata.get('path', ''))
+    path = st.text_input('path', _path)
 
 recipe_config={
     "path":path,
