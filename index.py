@@ -48,17 +48,16 @@ def get_latest(schema):
 def guess_type(newfile):
     with magic.Magic() as m:
         filetype=m.id_buffer(newfile.getvalue())
-    print(filetype)
     if 'CSV text' in filetype:
-        return 'csv'
+        return filetype,'csv'
     elif 'Zip archive' in filetype:
-        return 'zip'
+        return filetype,'zip'
     else:
-        return 'geojson'
+        return filetype,'geojson'
 
 def write_to_s3(newfile, schema, acl='client', client=client):
     if newfile is not None:
-        extension=guess_type(newfile)
+        filetype,extension=guess_type(newfile)
         key=f'{datetime.today().strftime("%Y-%m-%d")}/{schema}.{extension}'
         bucket='edm-recipes'
         client.put_object(
@@ -67,6 +66,7 @@ def write_to_s3(newfile, schema, acl='client', client=client):
                 Bucket=bucket,
                 Key=key)
         path=f's3://{bucket}/{key}'
+        st.write(filetype)
         st.success(f'successfully uploaded to {path}')
         return path
     else: 
