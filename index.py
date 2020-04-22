@@ -22,12 +22,10 @@ client = session.client('s3',
             aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID', ''),
             aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY', ''))
 
-@st.cache
 def get_schema():
     schemas = conn.execute('select distinct schema_name from meta.metadata').fetchall()
     return [dict(row)['schema_name'] for row in schemas]
 
-@st.cache
 def get_metadata(schema):
         result = conn.execute(f"select * from meta.metadata where schema_name = '{schema}'").fetchone()
         if result is None: 
@@ -39,7 +37,6 @@ def get_tables(schema):
     tables = conn.execute(f"select * from information_schema.tables where table_schema = '{schema}'").fetchall()
     return [dict(row)['table_name'] for row in tables]
 
-@st.cache
 def get_latest(schema):
     tables = conn.execute(f"select v from {schema}.latest limit 1").fetchall()
     return [dict(row)['v'] for row in tables][0]
@@ -82,7 +79,7 @@ st.write(tables)
 
 version_name = st.text_input('version_name', metadata.get('version_name', ''))
 dstSRS = st.text_input('dstSRS', metadata.get('dstSRS', 'EPSG:4326'))
-srcSRS = st.text_input('srcSRS', metadata.get('dstSRS', 'EPSG:4326'))
+srcSRS = st.text_input('srcSRS', metadata.get('srcSRS', 'EPSG:4326'))
 geometryType = st.text_input('geometryType', metadata.get('geometryType', 'NONE'))
 layerCreationOptions = st.text_input('layerCreationOptions', metadata.get('layerCreationOptions', "['OVERWRITE=YES', 'PRECISION=NO']"))
 newFieldNames = st.text_input('newFieldNames', metadata.get('newFieldNames', '[]'))
