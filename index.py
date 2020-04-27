@@ -60,10 +60,14 @@ def write_to_s3(newfile, schema, acl, ext, client=client):
 
 ### MAIN
 st.markdown('''
-        <h1><img style='height:10%; width:10%; float:left; vertical-align: baseline; padding: 5px;'
+    <h1 style="font-size:3rem;">🍔 Data Recipes</h1>
+    ''', unsafe_allow_html=True)
+st.sidebar.markdown('''
+    <div stule="margin-left: auto; margin-right: auto;">
+    <img style='width:40%; margin: 0 auto 2rem auto;display:block;'
         src="https://raw.githubusercontent.com/NYCPlanning/logo/master/dcp_logo_772.png">
-        DATA RECIPE</h1>
-        ''', unsafe_allow_html=True)
+    </div>
+    ''', unsafe_allow_html=True)
 
 schemas = get_schema()
 new = st.checkbox('new table?')
