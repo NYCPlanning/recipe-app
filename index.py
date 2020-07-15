@@ -112,8 +112,10 @@ srcOpenOptions = st.text_input(
         "['AUTODETECT_TYPE=NO', 'EMPTY_STRING_AS_NULL=YES', 'GEOM_POSSIBLE_NAMES=the_geom']",
     ),
 )
-metaInfo = st.text_input("metaInfo", metadata.get("metaInfo", ""))
+metaInfo = st.text_area("metaInfo", metadata.get("metaInfo", ""))
 upload = st.checkbox("upload new file?")
+edit = st.checkbox("edit metadata w/o upload?")
+
 _path = metadata.get("path", "")
 if upload:
     acl = st.radio("ACL", ("public-read", "private"), index=1)
@@ -193,27 +195,49 @@ st.sidebar.markdown(
 ###
 
 if submit and not new:
-    archiver.archive_table(recipe_config)
-    conn.execute(
-        f"""
-            UPDATE meta.metadata
-            SET config='{json.dumps(recipe_config)}'::jsonb,
-                last_update=now()
-            WHERE schema_name='{schema}';
-        """
-    )
+    if not edit:
+        archiver.archive_table(recipe_config)
+        conn.execute(
+            f"""
+                UPDATE meta.metadata
+                SET config = %(config)s ::jsonb,
+                    last_update = now()
+                WHERE schema_name=%(schema_name)s;
+            """,
+            {
+                'config': json.dumps(recipe_config),
+                'schema_name': schema,
+            }
+        )
+    else:
+        conn.execute(
+            f"""
+                UPDATE meta.metadata
+                SET config = %(config)s ::jsonb
+                WHERE schema_name=%(schema_name)s;
+            """,
+            {
+                'config': json.dumps(recipe_config),
+                'schema_name': schema,
+            }
+        )
     st.success(f"{schema} is successfully loaded")
     st.write(recipe_config)
+
 elif submit and new:
-    archiver.archive_table(recipe_config)
+    if not edit:
+        archiver.archive_table(recipe_config)
+
     conn.execute(
         f"""
             INSERT INTO meta.metadata(schema_name, config,last_update)
             VALUES
-                ('{schema}',
-                '{json.dumps(recipe_config)}'::jsonb,
-                now());
-        """
+                (%(schema_name)s, %(config)s ::jsonb, now());
+        """,
+        {
+            'config': json.dumps(recipe_config),
+            'schema_name': schema,
+        }
     )
     st.success(f"{schema} is successfully loaded")
     st.write(recipe_config)
