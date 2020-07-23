@@ -48,8 +48,14 @@ def get_tables(schema):
 
 
 def get_latest(schema):
-    tables = conn.execute(f"select v from {schema}.latest limit 1").fetchall()
-    return [dict(row)["v"] for row in tables][0]
+    tables = conn.execute(
+        f"""
+        SELECT table_name
+        FROM information_schema.view_table_usage
+        WHERE view_schema = '{schema}' and view_name= 'latest'
+        """
+    ).fetchall()
+    return [dict(row)["table_name"] for row in tables][0]
 
 
 def write_to_s3(newfile, schema, acl, ext, client=client):
@@ -119,7 +125,8 @@ edit = st.checkbox("edit metadata w/o upload?")
 _path = metadata.get("path", "")
 if upload:
     acl = st.radio("ACL", ("public-read", "private"), index=1)
-    ext = _path.split(".")[-1]
+    ext = st.selectbox(
+        "Pick your file type", ['csv', 'geojson', 'zip'], index=0)
     newfile = st.file_uploader("upload new", type=[ext])
     path = write_to_s3(newfile, schema, acl, ext, client=client)
 else:
@@ -204,10 +211,7 @@ if submit and not new:
                     last_update = now()
                 WHERE schema_name=%(schema_name)s;
             """,
-            {
-                'config': json.dumps(recipe_config),
-                'schema_name': schema,
-            }
+            {"config": json.dumps(recipe_config), "schema_name": schema,},
         )
     else:
         conn.execute(
@@ -216,10 +220,7 @@ if submit and not new:
                 SET config = %(config)s ::jsonb
                 WHERE schema_name=%(schema_name)s;
             """,
-            {
-                'config': json.dumps(recipe_config),
-                'schema_name': schema,
-            }
+            {"config": json.dumps(recipe_config), "schema_name": schema,},
         )
     st.success(f"{schema} is successfully loaded")
     st.write(recipe_config)
@@ -234,10 +235,7 @@ elif submit and new:
             VALUES
                 (%(schema_name)s, %(config)s ::jsonb, now());
         """,
-        {
-            'config': json.dumps(recipe_config),
-            'schema_name': schema,
-        }
+        {"config": json.dumps(recipe_config), "schema_name": schema,},
     )
     st.success(f"{schema} is successfully loaded")
     st.write(recipe_config)
