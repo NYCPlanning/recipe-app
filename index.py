@@ -58,9 +58,9 @@ def get_latest(schema):
     return [dict(row)["table_name"] for row in tables][0]
 
 
-def write_to_s3(newfile, schema, acl, ext, client=client):
+def write_to_s3(newfile, schema, version_name, acl, ext, client=client):
     if newfile is not None:
-        key = f'{datetime.today().strftime("%Y-%m-%d")}/{schema}.{ext}'
+        key = f'{datetime.today().strftime("%Y-%m-%d")}/{schema}-{version_name}.{ext}'
         bucket = "edm-recipes"
         client.put_object(ACL=acl, Body=newfile.getvalue(), Bucket=bucket, Key=key)
         path = f"s3://{bucket}/{key}"
@@ -125,10 +125,9 @@ edit = st.checkbox("edit metadata w/o upload?")
 _path = metadata.get("path", "")
 if upload:
     acl = st.radio("ACL", ("public-read", "private"), index=1)
-    ext = st.selectbox(
-        "Pick your file type", ['csv', 'geojson', 'zip'], index=0)
+    ext = st.selectbox("Pick your file type", ["csv", "geojson", "zip"], index=0)
     newfile = st.file_uploader("upload new", type=[ext])
-    path = write_to_s3(newfile, schema, acl, ext, client=client)
+    path = write_to_s3(newfile, schema, version_name, acl, ext, client=client)
 else:
     path = st.text_input("path", _path)
 
