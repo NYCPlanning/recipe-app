@@ -19,7 +19,7 @@ archiver = Archiver(
 session = boto3.session.Session()
 client = session.client(
     "s3",
-    region_name="S3_REGION",
+    region_name="nyc3",
     endpoint_url=os.environ.get("AWS_S3_ENDPOINT", ""),
     aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID", ""),
     aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY", ""),
