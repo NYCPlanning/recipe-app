@@ -6,6 +6,7 @@ import streamlit as st
 import json
 import boto3
 import os
+import io
 
 conn = create_engine(os.environ.get("RECIPE_ENGINE"))
 archiver = Archiver(
@@ -126,7 +127,8 @@ _path = metadata.get("path", "")
 if upload:
     acl = st.radio("ACL", ("public-read", "private"), index=1)
     ext = st.selectbox("Pick your file type", ["csv", "geojson", "zip"], index=0)
-    newfile = st.file_uploader("upload new", type=[ext])
+    file_buffer = st.file_uploader("upload new", type=[ext])
+    newfile = io.TextIOWrapper(file_buffer)
     path = write_to_s3(newfile, schema, version_name, acl, ext, client=client)
 else:
     path = st.text_input("path", _path)
