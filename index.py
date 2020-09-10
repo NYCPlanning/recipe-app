@@ -63,7 +63,7 @@ def write_to_s3(newfile, schema, version_name, acl, ext, client=client):
     if newfile is not None:
         key = f'{datetime.today().strftime("%Y-%m-%d")}/{schema}-{version_name}.{ext}'
         bucket = "edm-recipes"
-        client.put_object(ACL=acl, Body=newfile.getvalue(), Bucket=bucket, Key=key)
+        client.put_object(ACL=acl, Body=newfile, Bucket=bucket, Key=key)
         path = f"s3://{bucket}/{key}"
         st.success(f"successfully uploaded to {path}")
         return path
